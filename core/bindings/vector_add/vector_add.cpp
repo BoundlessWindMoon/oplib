@@ -4,9 +4,9 @@ void launch_vector_add_kernel(torch::Tensor &c, const torch::Tensor &a, const to
 
 torch::Tensor vector_add(const torch::Tensor &a, const torch::Tensor &b)
 {
-    TORCH_CHECK(a.is_cuda(), "输入张量 'a' 必须在 CUDA 上");
-    TORCH_CHECK(b.is_cuda(), "输入张量 'b' 必须在 CUDA 上");
-    TORCH_CHECK(a.numel() == b.numel(), "输入张量必须有相同的元素数量");
+    TORCH_CHECK(a.is_cuda(), "input tensor 'a' must at CUDA ");
+    TORCH_CHECK(b.is_cuda(), "input tensor 'b' must at CUDA ");
+    TORCH_CHECK(a.numel() == b.numel(), "shape(a) must equal to shape(b)");
 
     torch::Tensor c = torch::empty_like(a);
 

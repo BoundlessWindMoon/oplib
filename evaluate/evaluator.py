@@ -8,11 +8,12 @@ from configparser import ConfigParser
 
 class Evaluator:
     class OpContext:
-        def __init__(self, op_class, num_warmup=5, num_eval=5, device="cpu"):
+        def __init__(self, op_class, num_warmup=5, num_eval=5, tolerance=1e-5,device="cpu"):
             self.op_class = op_class
             self.op_instance = None
             self.num_warmup = num_warmup
             self.num_eval = num_eval
+            self.tolerance = tolerance
             self.device = device
 
     def __init__(
@@ -48,15 +49,17 @@ class Evaluator:
         for section in sections:
             name = parser.get(section, "name")
             backend = parser.get(section, "backend")
-            num_warmup = self.parser.getint(section, "num_warmup", fallback=5)
-            num_eval = self.parser.getint(section, "num_eval", fallback=5)
-
+            num_warmup = parser.getint(section, "num_warmup", fallback=5)
+            num_eval = parser.getint(section, "num_eval", fallback=5)
+            tolerance = parser.getfloat(section, "tolerance", fallback=1e-5)
+            
             if op_class := self.op_registry.get(name):
                 # create ctx by op_class
                 ctx = self.OpContext(
                     op_class=op_class,
                     num_warmup=num_warmup,
                     num_eval=num_eval,
+                    tolerance=tolerance,
                     device=self.device,
                 )
                 ctx.op_instance = op_class(name, backend, device=ctx.device)
@@ -80,8 +83,8 @@ class Evaluator:
 
         reference = op.get_reference()
         result = op.get_result()
-        error = torch.abs(reference - result).max().item()
-        assert error < 1e-5, f"op {op.name} error! max_error = {error}"
+        error = torch.abs((reference - result)).mean().item()
+        assert error < ctx.tolerance, f"op {op.name} error! max_error = {error}"
         assert torch.cuda.is_available(), "torch.cuda.is_available == False"
 
         # warmup

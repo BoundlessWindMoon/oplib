@@ -6,11 +6,6 @@ BIND_PATH = "./core/bindings/"
 OP_PATH = "./core/ops/"
 
 
-class DisableEggInfo(egg_info):
-    def run(self):
-        pass
-
-
 setup(
     name="ops",
     ext_modules=[
@@ -20,7 +15,21 @@ setup(
                 BIND_PATH + "/vector_add/vector_add.cpp",
                 OP_PATH + "/vector_add/vector_add_kernel.cu",
             ],
-        )
+        ),
+        CUDAExtension(
+            name="reduce",
+            sources=[
+                BIND_PATH + "/reduce/reduce.cpp",
+                OP_PATH + "/reduce/reduce_kernel.cu",
+            ],
+        ),
+        CUDAExtension(
+            name="gemm",
+            sources=[
+                BIND_PATH + "/gemm/gemm.cpp",
+                OP_PATH + "/gemm/gemm_kernel.cu",
+            ],
+        ),
     ],
     options={
         "egg_info": {
