@@ -50,7 +50,8 @@ class VaddOp(Op):
             return Z
 
         elif backend == "triton":
-            raise NotImplementedError("Triton backend not implemented yet")
+            from backend.triton.ops.vector_add import add
+            return add(self.X, self.Y)
         elif backend == "cuda":
             import vector_add
 
