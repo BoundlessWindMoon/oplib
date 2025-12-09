@@ -8,7 +8,7 @@
 
 ## backend 
 - [x] torch
-- [ ] cuda
+- [x] cuda
 - [ ] triton
 - [ ] cutile
 - [ ] tilelang
