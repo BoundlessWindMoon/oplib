@@ -4,14 +4,15 @@ from evaluate.op import Op
 
 class VaddOp(Op):
     def __init__(self, name, backend, device):
+        super().__init__(name, backend)
         self.name = name
         self.backend = backend
         self.device = device
 
         # Ignore incx and incy
         self.N = 102400
-        self.X:torch.Tensor
-        self.Y:torch.Tensor
+        self.X: torch.Tensor
+        self.Y: torch.Tensor
         self.incx = 1
         self.incy = 1
 
@@ -22,11 +23,11 @@ class VaddOp(Op):
     def get_reference(self):
         reference = self.run("eager")
         return reference
-    
+
     def get_result(self):
         result = self.run(self.backend)
-        return result    
-        
+        return result
+
     def eval(self):
         reference_result = self.run("eager")
         result = self.run(self.backend)

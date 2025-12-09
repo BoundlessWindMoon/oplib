@@ -3,7 +3,8 @@ from evaluate.op import Op
 
 
 class GemmOp(Op):
-    def __init__(self, name, backend,device):
+    def __init__(self, name, backend, device):
+        super().__init__(name, backend)
         self.M = 4096
         self.N = 4096
         self.K = 4096
@@ -34,6 +35,7 @@ class GemmOp(Op):
             return self.C + self.A @ self.B
         elif backend == "cuda":
             import gemm
+
             return gemm.gemm(self.A, self.B, self.C, self.M, self.N, self.K)
         elif backend == "triton":
             raise NotImplementedError(

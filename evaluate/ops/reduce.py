@@ -4,6 +4,7 @@ from evaluate.op import Op
 
 class ReduceOp(Op):
     def __init__(self, name, backend, device):
+        super().__init__(name, backend)
         self.N = 1048576
         self.name = name
         self.backend = backend
@@ -26,9 +27,10 @@ class ReduceOp(Op):
             return torch.sum(self.X)
         elif backend == "cuda":
             import reduce
+
             self.SUM = reduce.reduce(self.X, self.SUM)
             return self.SUM[0]
-            
+
         elif backend == "triton":
             raise NotImplementedError(
                 f"{self.name}: triton backend not implemented yet"

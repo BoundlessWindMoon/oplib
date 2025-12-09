@@ -6,6 +6,7 @@ from torch.nn import functional as F
 
 class AttentionOp(Op):
     def __init__(self, name, backend, device):
+        super().__init__(name, backend)
         self.name = name
         self.backend = backend
         self.device = device
