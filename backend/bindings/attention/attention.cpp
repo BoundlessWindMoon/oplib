@@ -1,0 +1,15 @@
+#include <torch/extension.h>
+
+torch::Tensor launch_attn_kernel(torch::Tensor Q, torch::Tensor K, torch::Tensor V);
+
+torch::Tensor attention(torch::Tensor &Q, torch::Tensor &K, torch::Tensor &V) {
+    TORCH_CHECK(Q.is_cuda(), "input tensor A must at CUDA");
+    TORCH_CHECK(K.is_cuda(), "input tensor A must at CUDA");
+    TORCH_CHECK(V.is_cuda(), "input tensor A must at CUDA");
+    
+    return launch_attn_kernel(Q, K, V);
+}
+
+PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
+    m.def("attn", &attention, "Attention(CUDA)");
+}
