@@ -30,6 +30,13 @@ setup(
                 OP_PATH + "/gemm/gemm_kernel.cu",
             ],
         ),
+        CUDAExtension(
+            name="attention",
+            sources=[
+                BIND_PATH + "/attention/attention.cpp",
+                OP_PATH + "/attention/attention_kernel.cu",
+            ],
+        )
     ],
     options={
         "egg_info": {

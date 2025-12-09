@@ -15,7 +15,7 @@ def main():
             f"Result of op({ctx.op_instance.name}) PASSED! accelerate ratio = {reference_time / op_time}"
         )
         print(f"reference(backend=eager): time = {reference_time}")
-        print(f"custom op(backend={ctx.op_instance.backend}): time = {op_time}")
+        print(f"custom op(backend={ctx.op_instance.backend}): time = {op_time}\n")
 
 
 if __name__ == "__main__":
