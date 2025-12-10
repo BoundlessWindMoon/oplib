@@ -15,7 +15,7 @@ class Evaluator:
             self.num_eval = num_eval
             self.tolerance = tolerance
             self.device = device
-
+            
     def __init__(
         self, config_path="./config/ops.ini", device="cpu"
     ):
@@ -26,13 +26,13 @@ class Evaluator:
 
         self.config_path = config_path
         self.device = device
-
+        self.run_eval = False
         self.op_ctxs = []
         self.op_registry = {}
 
-    def register(self):
+    def parse_config(self):
         self.register_op_type()
-        self.register_ops()
+        self.parse()
 
     def register_op_type(self):
         # TODO: delete hard code
@@ -42,35 +42,74 @@ class Evaluator:
             "attention": AttentionOp,
             "vadd": VaddOp,
         }
-
-    def register_ops(self):
+    
+    def get_eval_info(self):
+        return self.run_eval 
+    
+    def parse(self):
         parser = self.parser
         sections = parser.sections()
         for section in sections:
-            name = parser.get(section, "name")
-            backend = parser.get(section, "backend")
-            num_warmup = parser.getint(section, "num_warmup", fallback=5)
-            num_eval = parser.getint(section, "num_eval", fallback=5)
-            tolerance = parser.getfloat(section, "tolerance", fallback=1e-5)
-            
-            if op_class := self.op_registry.get(name):
-                # create ctx by op_class
-                ctx = self.OpContext(
-                    op_class=op_class,
-                    num_warmup=num_warmup,
-                    num_eval=num_eval,
-                    tolerance=tolerance,
-                    device=self.device,
-                )
-                ctx.op_instance = op_class(name, backend, device=ctx.device)
-                self.op_ctxs.append(ctx)
+            if section == "global":
+                self.run_eval = True if parser.get(section, "run_eval").lower() == "true" else False 
             else:
-                raise ValueError(f"Unregistered operation:{name}")
+                name = parser.get(section, "name")
+                backend = parser.get(section, "backend")
+                num_warmup = parser.getint(section, "num_warmup", fallback=5)
+                num_eval = parser.getint(section, "num_eval", fallback=5)
+                tolerance = parser.getfloat(section, "tolerance", fallback=1e-5)
+                
+                if op_class := self.op_registry.get(name):
+                    # create ctx by op_class
+                    ctx = self.OpContext(
+                        op_class=op_class,
+                        num_warmup=num_warmup,
+                        num_eval=num_eval,
+                        tolerance=tolerance,
+                        device=self.device,
+                    )
+                    ctx.op_instance = op_class(name, backend, device=ctx.device)
+                    self.op_ctxs.append(ctx)
+                else:
+                    raise ValueError(f"Unregistered operation:{name}")
 
     def get_op_ctxs(self):
         return self.op_ctxs
+        
+    def run_custom_ops(self, ctx):
+        op = ctx.op_instance
+        num_warmup = ctx.num_warmup
+        num_eval = ctx.num_eval
 
-    def eval(self, ctx):
+        # prepare for test data
+        op.prepare_data()
+
+        # warmup
+        for _ in range(num_warmup):
+            op.get_result()
+
+        def measure_time(func):
+            """Helper function to measure execution time"""
+            start = torch.cuda.Event(enable_timing=True)
+            end = torch.cuda.Event(enable_timing=True)
+
+            torch.cuda.synchronize()
+            start.record()
+
+            for _ in range(num_eval):
+                func()
+
+            end.record()
+            torch.cuda.synchronize()
+            return start.elapsed_time(end) / num_eval
+
+        # Measure performance
+        op_time = measure_time(op.get_result)
+
+        return {op_time / num_eval}
+        
+        
+    def run_full_evaluation(self, ctx):
         op = ctx.op_instance
         num_warmup = ctx.num_warmup
         num_eval = ctx.num_eval
