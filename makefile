@@ -12,7 +12,7 @@ endif
 TARGET_SCRIPT := ./run.py
 REPORT_DIR := ./build/ncu
 
-.PHONY: profile-full ui
+.PHONY: profile-full ui clean
 profile-full:
 	@echo "Profiling with full option..."
 	@mkdir -p $(REPORT_DIR)
@@ -50,3 +50,8 @@ ui:
 			exit 1; \
 		fi; \
 	fi
+
+clean:
+	@echo "Cleaning build directory..."
+	@rm -rf ./build
+	@echo "Clean done"
