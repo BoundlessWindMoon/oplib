@@ -1,7 +1,7 @@
 from evaluate.evaluator import Evaluator
 from evaluate.op import Op
 import argparse
-config_path = "./config/ops_cuda.ini"
+config_path = "./config/ops.ini"
 device = "cuda:0"
 
 
