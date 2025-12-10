@@ -39,7 +39,7 @@
 //     __syncthreads();
 // }
 
-__global__ void gemm_kernel(__half *A, __half *B, __half *C, int M, int N, int K) {
+__global__ void gemm_v0_kernel(__half *A, __half *B, __half *C, int M, int N, int K) {
     int r = blockIdx.y * blockDim.y + threadIdx.y;
     int c = blockIdx.x * blockDim.x + threadIdx.x;
     if (r >= M || c >= N) return;
@@ -50,7 +50,7 @@ __global__ void gemm_kernel(__half *A, __half *B, __half *C, int M, int N, int K
     C[r * N + c] = __hadd(C[r * N + c], __float2half(value));  
 }
 
-void launch_gemm_kernel(torch::Tensor &A, torch::Tensor &B, torch::Tensor &C, int M, int N, int K)
+void launch_gemm_v0_kernel(torch::Tensor &A, torch::Tensor &B, torch::Tensor &C, int M, int N, int K)
 {
     int BM = 16;
     int BN = 16;
@@ -61,7 +61,7 @@ void launch_gemm_kernel(torch::Tensor &A, torch::Tensor &B, torch::Tensor &C, in
     dim3 block(16, 16);
     dim3 grid((M + BM - 1) / BM, (N + BN - 1) / BN);
 
-    gemm_kernel<<<grid, block>>>(
+    gemm_v0_kernel<<<grid, block>>>(
         reinterpret_cast<__half*>(A.data_ptr<torch::Half>()),
         reinterpret_cast<__half*>(B.data_ptr<torch::Half>()),
         reinterpret_cast<__half*>(C.data_ptr<torch::Half>()),

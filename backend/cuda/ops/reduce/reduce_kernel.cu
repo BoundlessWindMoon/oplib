@@ -1,7 +1,7 @@
 #include <cuda_runtime.h>
 #include <torch/extension.h>
 #include <stdio.h>
-__global__ void reduce_kernel(float* input, float* sum, int n) {
+__global__ void reduce_v0_kernel(float* input, float* sum, int n) {
     extern __shared__ float smem[];
 
     // global -> smem
@@ -27,12 +27,12 @@ __global__ void reduce_kernel(float* input, float* sum, int n) {
     __syncthreads();
 }
 
-void launch_reduce_kernel(torch::Tensor &input, torch::Tensor &sum, int n) {
+void launch_reduce_v0_kernel(torch::Tensor &input, torch::Tensor &sum, int n) {
     const int blocksize = 32;
     dim3 block(blocksize);
     dim3 grid((n + blocksize-1) / blocksize);
 
-    reduce_kernel<<<grid, block>>>(
+    reduce_v0_kernel<<<grid, block>>>(
         input.data_ptr<float>(),
         sum.data_ptr<float>(),
         n

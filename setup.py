@@ -20,39 +20,39 @@ setup(
                 "nvcc": ["-O2"],
             },
         ),
-        # CUDAExtension(
-        #     name="reduce",
-        #     sources=[
-        #         BIND_PATH + "/reduce/reduce.cpp",
-        #         OP_PATH + "/reduce/reduce_kernel.cu",
-        #     ],
-        #     extra_compile_args={
-        #         "cxx": ["-O2"],
-        #         "nvcc": ["-O2"],
-        #     },
-        # ),
-        # CUDAExtension(
-        #     name="gemm",
-        #     sources=[
-        #         BIND_PATH + "/gemm/gemm.cpp",
-        #         OP_PATH + "/gemm/gemm_kernel.cu",
-        #     ],
-        #     extra_compile_args={
-        #         "cxx": ["-O2"],
-        #         "nvcc": ["-O2"],
-        #     },
-        # ),
-        # CUDAExtension(
-        #     name="attention",
-        #     sources=[
-        #         BIND_PATH + "/attention/attention.cpp",
-        #         OP_PATH + "/attention/attention_kernel.cu",
-        #     ],
-        #     extra_compile_args={
-        #         "cxx": ["-O2"],
-        #         "nvcc": ["-O2"],
-        #     },
-        # )
+        CUDAExtension(
+            name="reduce",
+            sources=[
+                BIND_PATH + "/reduce/reduce.cpp",
+                OP_PATH + "/reduce/reduce_kernel.cu",
+            ],
+            extra_compile_args={
+                "cxx": ["-O2"],
+                "nvcc": ["-O2"],
+            },
+        ),
+        CUDAExtension(
+            name="gemm",
+            sources=[
+                BIND_PATH + "/gemm/gemm.cpp",
+                OP_PATH + "/gemm/gemm_kernel.cu",
+            ],
+            extra_compile_args={
+                "cxx": ["-O2"],
+                "nvcc": ["-O2"],
+            },
+        ),
+        CUDAExtension(
+            name="attention",
+            sources=[
+                BIND_PATH + "/attention/attention.cpp",
+                OP_PATH + "/attention/attention_kernel.cu",
+            ],
+            extra_compile_args={
+                "cxx": ["-O2"],
+                "nvcc": ["-O2"],
+            },
+        )
     ],
     options={
         "egg_info": {

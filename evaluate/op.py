@@ -3,12 +3,17 @@ from abc import ABC, abstractmethod
 
 
 class Op(ABC):
-    def __init__(self, name, backend, **kwargs):
+    def __init__(self, name, backend, version,**kwargs):
         self.name = name
         self.backend = backend
+        self.version = version
         self.kwargs = kwargs
         self.validate_backend(self.backend)
-
+        
+    @abstractmethod
+    def get_func(self):
+        pass    
+        
     @abstractmethod
     def run(self):
         pass
@@ -48,3 +53,5 @@ class Op(ABC):
                 __import__(req["module"])
             except ImportError as e:
                 raise ImportError(req["error_msg"]) from e
+            
+        

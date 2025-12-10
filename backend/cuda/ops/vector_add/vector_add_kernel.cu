@@ -64,20 +64,29 @@ __global__ void vector_add_v1_kernel(float *c, const float *a, const float *b, i
     __syncthreads();
 }
 
-void launch_vector_add_kernel(torch::Tensor &c, const torch::Tensor &a, const torch::Tensor &b)
+void launch_vector_add_v0_kernel(torch::Tensor &c, const torch::Tensor &a, const torch::Tensor &b)
 {
     int n = a.numel();
-    // const int blocksize = 1024;
-    // const int gridsize = (n + blocksize -1) / blocksize ;
+    const int blocksize = 1024;
+    const int gridsize = (n + blocksize -1) / blocksize ;
 
     // version 0：naive implementation
-    // vector_add_v0_kernel<<<gridsize, blocksize>>> (
-    //     c.data_ptr<float>(),
-    //     a.data_ptr<float>(),
-    //     b.data_ptr<float>(),
-    //     n
-    // );
-    
+    vector_add_v0_kernel<<<gridsize, blocksize>>> (
+        c.data_ptr<float>(),
+        a.data_ptr<float>(),
+        b.data_ptr<float>(),
+        n
+    );
+
+    cudaError_t err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        throw std::runtime_error(cudaGetErrorString(err));
+    }
+}
+
+void launch_vector_add_v1_kernel(torch::Tensor &c, const torch::Tensor &a, const torch::Tensor &b)
+{
+    int n = a.numel();
 
     const int blocksize = 1024;
     const int gridsize = (n + blocksize -1) / blocksize / 4;

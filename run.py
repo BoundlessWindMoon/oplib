@@ -23,10 +23,10 @@ def main():
                 f"Result of op({ctx.op_instance.name}) PASSED! accelerate ratio = {reference_time / op_time}"
             )
             print(f"reference(backend=eager): time = {reference_time}")
-            print(f"custom op(backend={ctx.op_instance.backend}): time = {op_time}\n")
+            print(f"custom op(backend={ctx.op_instance.backend}, version={ctx.op_instance.version}): time = {op_time}\n")
         else:
             op_time = evaluator.run_custom_ops(ctx)
-            print(f"custom op(backend={ctx.op_instance.backend}): time = {op_time}\n")
+            print(f"custom op(backend={ctx.op_instance.backend}, version={ctx.op_instance.version}): time = {op_time}\n")
 
 
 if __name__ == "__main__":

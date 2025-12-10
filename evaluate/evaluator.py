@@ -8,17 +8,24 @@ from configparser import ConfigParser
 
 class Evaluator:
     class OpContext:
-        def __init__(self, op_class, num_warmup=5, num_eval=5, tolerance=1e-5,device="cpu"):
+        def __init__(
+            self,
+            op_class,
+            op_version,
+            num_warmup=5,
+            num_eval=5,
+            tolerance=1e-5,
+            device="cpu",
+        ):
             self.op_class = op_class
             self.op_instance = None
+            self.op_version = op_version
             self.num_warmup = num_warmup
             self.num_eval = num_eval
             self.tolerance = tolerance
             self.device = device
-            
-    def __init__(
-        self, config_path="./config/ops.ini", device="cpu"
-    ):
+
+    def __init__(self, config_path="./config/ops.ini", device="cpu"):
         self.parser = ConfigParser()
         readed_configs = self.parser.read(config_path)
         if not readed_configs:
@@ -42,40 +49,49 @@ class Evaluator:
             "attention": AttentionOp,
             "vadd": VaddOp,
         }
-    
+
     def get_eval_info(self):
-        return self.run_eval 
-    
+        return self.run_eval
+
     def parse(self):
         parser = self.parser
         sections = parser.sections()
         for section in sections:
             if section == "global":
-                self.run_eval = True if parser.get(section, "run_eval").lower() == "true" else False 
+                self.run_eval = (
+                    True if parser.get(section, "run_eval").lower() == "true" else False
+                )
             else:
                 name = parser.get(section, "name")
                 backend = parser.get(section, "backend")
                 num_warmup = parser.getint(section, "num_warmup", fallback=5)
                 num_eval = parser.getint(section, "num_eval", fallback=5)
                 tolerance = parser.getfloat(section, "tolerance", fallback=1e-5)
+
+                ver_str = parser.get(section, "ver", fallback="").strip()
+                versions = []
+                if ver_str.startswith('[') and ver_str.endswith(']'):
+                    versions = [v.strip() for v in ver_str[1:-1].split(',')]
                 
                 if op_class := self.op_registry.get(name):
-                    # create ctx by op_class
-                    ctx = self.OpContext(
-                        op_class=op_class,
-                        num_warmup=num_warmup,
-                        num_eval=num_eval,
-                        tolerance=tolerance,
-                        device=self.device,
-                    )
-                    ctx.op_instance = op_class(name, backend, device=ctx.device)
-                    self.op_ctxs.append(ctx)
+                    for version in versions or [None]:
+                        # create ctx by op_class
+                        ctx = self.OpContext(
+                            op_class=op_class,
+                            num_warmup=num_warmup,
+                            num_eval=num_eval,
+                            tolerance=tolerance,
+                            device=self.device,
+                            op_version=version,
+                        )
+                        ctx.op_instance = op_class(name, backend, version, device=ctx.device)
+                        self.op_ctxs.append(ctx)
                 else:
                     raise ValueError(f"Unregistered operation:{name}")
 
     def get_op_ctxs(self):
         return self.op_ctxs
-        
+
     def run_custom_ops(self, ctx):
         op = ctx.op_instance
         num_warmup = ctx.num_warmup
@@ -107,8 +123,7 @@ class Evaluator:
         op_time = measure_time(op.get_result)
 
         return {op_time / num_eval}
-        
-        
+
     def run_full_evaluation(self, ctx):
         op = ctx.op_instance
         num_warmup = ctx.num_warmup
