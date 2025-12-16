@@ -11,9 +11,12 @@ class ReduceOp(Op):
         self.device = device
         self.X: torch.Tensor
         self.SUM: torch.Tensor
-        
+
         self._backend_impls = {
             "cuda": {
+                "v0": None,
+            },
+            "triton": {
                 "v0": None,
             },
         }
@@ -32,6 +35,13 @@ class ReduceOp(Op):
         if backend == "cuda":
             if version == "v0":
                 from reduce import reduce_v0
+
+                self._backend_impls[backend][version] = reduce_v0
+
+        elif backend == "triton":
+            if version == "v0":
+                from backend.triton.ops.reduce import reduce_v0
+
                 self._backend_impls[backend][version] = reduce_v0
 
     def prepare_data(self):
@@ -56,9 +66,9 @@ class ReduceOp(Op):
                 return self.SUM[0]
             except Exception as e:
                 raise RuntimeError(
-                    f"Failed to execute {backend}/{version} vadd: {str(e)}"
+                    f"Failed to execute {backend}/{version}: {str(e)}"
                 )
-                
+
         # elif backend == "cuda":
         #     import reduce
 

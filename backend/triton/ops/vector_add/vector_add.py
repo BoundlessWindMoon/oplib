@@ -3,32 +3,35 @@ import torch
 import triton
 import triton.language as tl
 
-DEVICE = triton.runtime.driver.active.get_active_torch_device()
+
+def generate_configs():
+    block_size_n = [16, 32, 64, 128, 256, 512, 1024]
+    num_warps = [2, 4, 8, 16]
+
+    configs = []
+    for bn in block_size_n:
+        for warp in num_warps:
+            configs.append(triton.Config({"BLOCK_SIZE_N": bn}, num_warps=warp))
+    return configs
 
 
+@triton.autotune(configs=generate_configs(), key=["N"])
 @triton.jit
-def add_v0_kernel(
-    x_ptr,
-    y_ptr,
-    output_ptr,
-    n_elements,
-    BLOCK_SIZE: tl.constexpr,
-):
+def vadd_kernel(x_ptr, y_ptr, O_ptr, N, BLOCK_SIZE_N: tl.constexpr):
+    tid = tl.program_id(axis=0)
+    stride = BLOCK_SIZE_N
+    offset = tid * stride + tl.arange(0, BLOCK_SIZE_N)
+    mask = offset < N
+    a = tl.load(x_ptr + offset, mask=mask, other=0.0)
+    b = tl.load(y_ptr + offset, mask=mask, other=0.0)
+    c = a + b
 
-    pid = tl.program_id(axis=0)
-    block_start = pid * BLOCK_SIZE
-    offsets = block_start + tl.arange(0, BLOCK_SIZE)
-    mask = offsets < n_elements
-    x = tl.load(x_ptr + offsets, mask=mask)
-    y = tl.load(y_ptr + offsets, mask=mask)
-    output = x + y
-    tl.store(output_ptr + offsets, output, mask=mask)
+    tl.store(O_ptr + offset, c, mask=mask)
 
 
 def vadd_v0(x: torch.Tensor, y: torch.Tensor):
     output = torch.empty_like(x)
-    assert x.device == DEVICE and y.device == DEVICE and output.device == DEVICE
-    n_elements = output.numel()
-    grid = lambda meta: (triton.cdiv(n_elements, meta["BLOCK_SIZE"]),)
-    add_v0_kernel[grid](x, y, output, n_elements, BLOCK_SIZE=1024)
+    n = x.numel()
+    grid = lambda meta: (triton.cdiv(len(x), meta["BLOCK_SIZE_N"]),)
+    vadd_kernel[grid](x, y, output, n)
     return output
