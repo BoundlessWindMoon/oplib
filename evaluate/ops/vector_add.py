@@ -20,6 +20,7 @@ class VaddOp(Op):
             "cuda": {
                 "v0": None,
                 "v1": None,
+                "v2": None,
             },
             "triton": {"v0": None},
         }
@@ -45,6 +46,11 @@ class VaddOp(Op):
                 from vector_add import vadd_v1
 
                 self._backend_impls[backend][version] = vadd_v1
+                
+            elif version == "v2":
+                from vector_add import vadd_v2
+
+                self._backend_impls[backend][version] = vadd_v2
 
         elif backend == "triton":
             if version == "v0":
