@@ -15,9 +15,12 @@ class GemmOp(Op):
         self.A: torch.Tensor
         self.B: torch.Tensor
         self.C: torch.Tensor
-        
+
         self._backend_impls = {
             "cuda": {
+                "v0": None,
+            },
+            "triton": {
                 "v0": None,
             },
         }
@@ -36,18 +39,22 @@ class GemmOp(Op):
         if backend == "cuda":
             if version == "v0":
                 from gemm import gemm_v0
+
                 self._backend_impls[backend][version] = gemm_v0
 
+        elif backend == "triton":
+            if version == "v0":
+                from backend.triton.ops.gemm import gemm_v0
 
-        
+                self._backend_impls[backend][version] = gemm_v0
 
     def prepare_data(self):
         M = self.M
         N = self.N
         K = self.K
-        self.A = torch.randn(M, K, dtype=self.dtype, device=self.device)
-        self.B = torch.randn(K, N, dtype=self.dtype, device=self.device)
-        self.C = torch.randn(M, N, dtype=self.dtype, device=self.device)
+        self.A = torch.rand(M, K, dtype=self.dtype, device=self.device) - 0.5
+        self.B = torch.rand(K, N, dtype=self.dtype, device=self.device) - 0.5
+        self.C = torch.zeros(M, N, dtype=self.dtype, device=self.device) -0.5
 
     def get_reference(self):
         return self.run("eager")
@@ -69,18 +76,3 @@ class GemmOp(Op):
                 raise RuntimeError(
                     f"Failed to execute {backend}/{version} vadd: {str(e)}"
                 )
-                
-        # elif backend == "cuda":
-        #     import gemm
-
-        #     return gemm.gemm(self.A, self.B, self.C, self.M, self.N, self.K)
-        # elif backend == "triton":
-        #     raise NotImplementedError(
-        #         f"{self.name}: triton backend not implemented yet"
-        #     )
-        # elif backend == "tilelang":
-        #     raise NotImplementedError(
-        #         f"{self.name}: tilelang backend not implemented yet"
-        #     )
-        # else:
-        #     raise ValueError(f"{self.name}: backend not implemented yet")

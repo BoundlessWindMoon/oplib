@@ -125,6 +125,8 @@ class Evaluator:
         return {op_time / num_eval}
 
     def run_full_evaluation(self, ctx):
+        assert torch.cuda.is_available(), "torch.cuda.is_available == False"
+        
         op = ctx.op_instance
         num_warmup = ctx.num_warmup
         num_eval = ctx.num_eval
@@ -137,9 +139,8 @@ class Evaluator:
 
         reference = op.get_reference()
         result = op.get_result()
-        error = torch.abs((reference - result)).mean().item()
-        assert error < ctx.tolerance, f"op {op.name} error! max_error = {error}"
-        assert torch.cuda.is_available(), "torch.cuda.is_available == False"
+        # error = torch.abs((reference - result)).mean().item()
+        torch.testing.assert_close(reference, result, rtol= ctx.tolerance, atol= ctx.tolerance)
 
         # warmup
         for _ in range(num_warmup):
