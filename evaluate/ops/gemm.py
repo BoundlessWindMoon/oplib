@@ -23,6 +23,9 @@ class GemmOp(Op):
             "triton": {
                 "v0": None,
             },
+            "tilelang": {
+                "v0": None,
+            },
         }
 
     def get_func(self, backend, version):
@@ -47,6 +50,12 @@ class GemmOp(Op):
                 from backend.triton.ops.gemm import gemm_v0
 
                 self._backend_impls[backend][version] = gemm_v0
+                
+        elif backend == "tilelang":
+            if version == "v0":
+                from backend.tilelang.ops.gemm import gemm_v0
+
+                self._backend_impls[backend][version] = gemm_v0
 
     def prepare_data(self):
         M = self.M
@@ -54,7 +63,7 @@ class GemmOp(Op):
         K = self.K
         self.A = torch.rand(M, K, dtype=self.dtype, device=self.device) - 0.5
         self.B = torch.rand(K, N, dtype=self.dtype, device=self.device) - 0.5
-        self.C = torch.zeros(M, N, dtype=self.dtype, device=self.device) -0.5
+        self.C = torch.rand(M, N, dtype=self.dtype, device=self.device) -0.5
 
     def get_reference(self):
         return self.run("eager")
