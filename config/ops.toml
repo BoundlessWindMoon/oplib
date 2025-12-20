@@ -4,7 +4,8 @@ run_eval = true
 [ops.reduce]
 impl = [
     { backend = "cuda", versions = ["v0"] },
-    { backend = "triton", versions = ["v0"] }
+    { backend = "triton", versions = ["v0"] },
+    { backend = "tilelang", versions = ["v0"] }
 ]
 num_warmup = 10
 num_eval = 20
@@ -23,7 +24,8 @@ tolerance = 1e-2
 [ops.attention]
 impl = [
     { backend = "cuda", versions = ["v0"] },
-    { backend = "triton", versions = ["v0"] }
+    { backend = "triton", versions = ["v0"] },
+    
 ]
 num_warmup = 10
 num_eval = 30
@@ -35,6 +37,6 @@ impl = [
     { backend = "triton", versions = ["v0"] },
     { backend = "tilelang", versions = ["v0"] },
 ]
-num_warmup = 100
-num_eval = 10
+num_warmup = 10
+num_eval = 20
 tolerance = 1e-3

@@ -5,7 +5,7 @@ from evaluate.op import Op
 class ReduceOp(Op):
     def __init__(self, name, backend, version, device):
         super().__init__(name=name, backend=backend, version=version)
-        self.N = 1048576
+        self.N = 102410240
         self.name = name
         self.backend = backend
         self.device = device
@@ -17,6 +17,9 @@ class ReduceOp(Op):
                 "v0": None,
             },
             "triton": {
+                "v0": None,
+            },
+            "tilelang": {
                 "v0": None,
             },
         }
@@ -41,6 +44,12 @@ class ReduceOp(Op):
         elif backend == "triton":
             if version == "v0":
                 from backend.triton.ops.reduce import reduce_v0
+
+                self._backend_impls[backend][version] = reduce_v0
+                
+        elif backend == "tilelang":
+            if version == "v0":
+                from backend.tilelang.ops.reduce import reduce_v0
 
                 self._backend_impls[backend][version] = reduce_v0
 
