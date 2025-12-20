@@ -3,17 +3,60 @@ from evaluate.op import Op
 
 
 class VaddOp(Op):
-    def __init__(self, name, backend, device):
+    def __init__(self, name, backend, version, device):
+        super().__init__(name=name, backend=backend, version=version)
         self.name = name
         self.backend = backend
         self.device = device
 
         # Ignore incx and incy
         self.N = 102400
-        self.X:torch.Tensor
-        self.Y:torch.Tensor
+        self.X: torch.Tensor
+        self.Y: torch.Tensor
         self.incx = 1
         self.incy = 1
+
+        self._backend_impls = {
+            "cuda": {
+                "v0": None,
+                "v1": None,
+                "v2": None,
+            },
+            "triton": {"v0": None},
+        }
+
+    def get_func(self, backend, version):
+        if backend not in self._backend_impls:
+            raise ValueError(f"Unsupported backend {backend}")
+        if version not in self._backend_impls[backend]:
+            raise ValueError(f"Unsupported verison {version} on backend {backend}")
+        if self._backend_impls[backend][version] is None:
+            self._load_implementation(backend, version)
+
+        return self._backend_impls[backend][version]
+
+    def _load_implementation(self, backend, version):
+        if backend == "cuda":
+            if version == "v0":
+                from vector_add import vadd_v0
+
+                self._backend_impls[backend][version] = vadd_v0
+
+            elif version == "v1":
+                from vector_add import vadd_v1
+
+                self._backend_impls[backend][version] = vadd_v1
+                
+            elif version == "v2":
+                from vector_add import vadd_v2
+
+                self._backend_impls[backend][version] = vadd_v2
+
+        elif backend == "triton":
+            if version == "v0":
+                from backend.triton.ops.vector_add import vadd_v0
+
+                self._backend_impls[backend][version] = vadd_v0
 
     def prepare_data(self):
         self.X = torch.randn(self.N, device=self.device)
@@ -22,11 +65,11 @@ class VaddOp(Op):
     def get_reference(self):
         reference = self.run("eager")
         return reference
-    
-    def get_result(self):
-        result = self.run(self.backend)
-        return result    
-        
+
+    def get_result(self, version=None):
+        result = self.run(self.backend, self.version)
+        return result
+
     def eval(self):
         reference_result = self.run("eager")
         result = self.run(self.backend)
@@ -34,7 +77,7 @@ class VaddOp(Op):
         print(f"max_error: {error:.9f}")
         return error < 1e-5
 
-    def run(self, backend):
+    def run(self, backend, version=None):
         if backend == "eager":
             assert len(self.X) == len(
                 self.Y
@@ -48,12 +91,14 @@ class VaddOp(Op):
                 raise NotImplementedError("(incx > 1 or incy > 1) not implemented yet")
             return Z
 
-        elif backend == "triton":
-            raise NotImplementedError("Triton backend not implemented yet")
-        elif backend == "cuda":
-            import vector_add
-
-            Z = vector_add.add(self.X, self.Y)
-            return Z
         else:
-            raise ValueError(f"Unknown backend: {backend}")
+            try:
+                func = self.get_func(backend, version)
+                if func is None:
+                    raise ImportError(f"No implementation found fo {backend}/{version}")
+                output = func(self.X, self.Y)
+                return output
+            except Exception as e:
+                raise RuntimeError(
+                    f"Failed to execute {backend}/{version} vadd: {str(e)}"
+                )

@@ -5,7 +5,8 @@ from evaluate.op import Op
 from torch.nn import functional as F
 
 class AttentionOp(Op):
-    def __init__(self, name, backend, device):
+    def __init__(self, name, backend, version, device):
+        super().__init__(name=name, backend=backend, version=version)
         self.name = name
         self.backend = backend
         self.device = device
@@ -22,6 +23,27 @@ class AttentionOp(Op):
         self.D = 768  # Hidden_dim
 
         self.dtype = torch.float
+        
+        self._backend_impls = {
+            "cuda": {
+                "v0": None,
+            }
+        }
+    
+    def get_func(self, backend, version):
+        if backend not in self._backend_impls:
+            raise ValueError(f"Unsupported backend {backend}")
+        if version not in self._backend_impls[backend]:
+            raise ValueError(f"Unsupported verison {version} on backend {backend}")
+        if self._backend_impls[backend][version] is None:
+            self._load_implementation(backend, version)
+        
+        return self._backend_impls[backend][version]
+        
+    def _load_implementation(self, backend, version):
+        if backend == "cuda":
+            from attention import attn_v0
+            self._backend_impls[backend][version] = attn_v0
 
     def prepare_data(self):
         B = self.B
@@ -39,9 +61,9 @@ class AttentionOp(Op):
         return self.run("eager")
 
     def get_result(self):
-        return self.run(self.backend)
+        return self.run(self.backend, self.version)
 
-    def run(self, backend="eager"):
+    def run(self, backend="eager", version=None):
         B = self.B
         S = self.S
         H = self.H
@@ -69,20 +91,13 @@ class AttentionOp(Op):
                 # [B, H, S, HD] -> [B, S, H, HD] -> [B, S, D]
                 output = output.transpose(1, 2).contiguous().view(B, S, D)
                 return output
-
-        elif backend == "cuda":
-            import attention
-            output = attention.attn(Q, K, V)
-            output = output.transpose(1, 2).contiguous().view(B, S, D)
-            return output
-            
-        elif backend == "triton":
-            raise NotImplementedError(
-                f"{self.name}: triton backend not implemented yet"
-            )
-        elif backend == "tilelang":
-            raise NotImplementedError(
-                f"{self.name}: tilelang backend not implemented yet"
-            )
         else:
-            raise ValueError(f"{self.name}: backend not implemented yet")
+            try:
+                func = self.get_func(backend, version)
+                if func is None:
+                    raise ImportError(f"No implementation found fo {backend}/{version}")
+                output = func(Q, K, V)
+                return output.transpose(1, 2).contiguous().view(B, S, D)
+            except Exception as e:
+                raise RuntimeError(f"Failed to execute {backend}/{version} attention: {str(e)}")
+            

@@ -7,15 +7,13 @@ void forward_kernel(const float* Q, const float* K, const float* V, const int N,
                     const int Tc, const int Tr, const int Bc, const int Br, const float softmax_scale,
                     float* l, float *m, float* O) {
     int tx = threadIdx.x;
-    int bx = blockIdx.x; int by = blockIdx.y;  // batch and head index
+    int bx = blockIdx.x; int by = blockIdx.y;  
 
-    // Offset into Q,K,V,O,l,m - different for each batch and head
-    int qkv_offset = (bx * gridDim.y * N * d) + (by * N * d);  // gridDim.y = nh
-    int lm_offset = (bx * gridDim.y * N) + (by * N);  // offset for l and m
+    int qkv_offset = (bx * gridDim.y * N * d) + (by * N * d);  
+    int lm_offset = (bx * gridDim.y * N) + (by * N); 
 
-    // Define SRAM for Q,K,V,S
     extern __shared__ float sram[];
-    int tile_size = Bc * d;  // size of Qi, Kj, Vj
+    int tile_size = Bc * d;  
     float* Qi = sram;
     float* Kj = &sram[tile_size];
     float* Vj = &sram[tile_size * 2];
@@ -23,23 +21,20 @@ void forward_kernel(const float* Q, const float* K, const float* V, const int N,
 
     for (int j = 0; j < Tc; j++) {
 
-        // Load Kj, Vj to SRAM
         for (int x = 0; x < d; x++) {
             Kj[(tx * d) + x] = K[qkv_offset + (tile_size * j) + (tx * d) + x];
             Vj[(tx * d) + x] = V[qkv_offset + (tile_size * j) + (tx * d) + x];
         }
-        __syncthreads();  // such that the inner loop can use the correct Kj, Vj
+        __syncthreads();  
 
         for (int i = 0; i < Tr; i++)  {
 
-            // Load Qi to SRAM, l and m to registers
             for (int x = 0; x < d; x++) {
                 Qi[(tx * d) + x] = Q[qkv_offset + (tile_size * i) + (tx * d) + x];
             }
             float row_m_prev = m[lm_offset + (Br * i) + tx];
             float row_l_prev = l[lm_offset + (Br * i) + tx];
 
-            // S = QK^T, row_m = rowmax(S)
             float row_m = -INFINITY;
             for (int y = 0; y < Bc; y++) {
                 float sum = 0;
@@ -53,20 +48,17 @@ void forward_kernel(const float* Q, const float* K, const float* V, const int N,
                     row_m = sum;
             }
 
-            // P = exp(S - row_m), row_l = rowsum(P)
             float row_l = 0;
             for (int y = 0; y < Bc; y++) {
                 S[(Bc * tx) + y] = __expf(S[(Bc * tx) + y] - row_m);
                 row_l += S[(Bc * tx) + y];
             }
 
-            // Compute new m and l
             float row_m_new = max(row_m_prev, row_m);
             float row_l_new = (__expf(row_m_prev - row_m_new) * row_l_prev) + (__expf(row_m - row_m_new) * row_l);
 
-            // Write O, l, m to HBM
             for (int x = 0; x < d; x++) {
-                float pv = 0;  // Pij * Vj
+                float pv = 0;  
                 for (int y = 0; y < Bc; y++) {
                     pv += S[(Bc * tx) + y] * Vj[(y * d) + x];
                 }
@@ -77,7 +69,7 @@ void forward_kernel(const float* Q, const float* K, const float* V, const int N,
             m[lm_offset + (Br * i) + tx] = row_m_new;
             l[lm_offset + (Br * i) + tx] = row_l_new;
         }
-        __syncthreads();  // otherwise, thread can use the wrong Kj, Vj in inner loop
+        __syncthreads();  
     }
 }
 
