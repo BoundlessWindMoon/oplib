@@ -27,6 +27,9 @@ class AttentionOp(Op):
         self._backend_impls = {
             "cuda": {
                 "v0": None,
+            },
+            "triton": {
+                "v0": None,
             }
         }
     
@@ -42,8 +45,14 @@ class AttentionOp(Op):
         
     def _load_implementation(self, backend, version):
         if backend == "cuda":
-            from attention import attn_v0
-            self._backend_impls[backend][version] = attn_v0
+            if version == "v0":
+                from attention import attn_v0
+                self._backend_impls[backend][version] = attn_v0
+            
+        elif backend == "triton":
+            if version == "v0":
+                from backend.triton.ops.attention import attn_v0 
+                self._backend_impls[backend][version] = attn_v0
 
     def prepare_data(self):
         B = self.B
