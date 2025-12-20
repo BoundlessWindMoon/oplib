@@ -1,8 +1,9 @@
 from evaluate.evaluator import Evaluator
 from evaluate.op import Op
+from utils.reporter import ProgressReporter
 import argparse
 
-config_path = "./config/ops.ini"
+config_path = "./config/ops.toml"
 device = "cuda:0"
 
 
@@ -14,19 +15,15 @@ def main():
     evaluator = Evaluator(config_path=args.c, device=device)
     evaluator.parse_config()
     ctxs = evaluator.get_op_ctxs()
-    run_eval = evaluator.get_eval_info()
 
-    for ctx in ctxs:
-        if run_eval is True:
-            reference_time, op_time = evaluator.run_full_evaluation(ctx)
-            print(
-                f"Result of op({ctx.op_instance.name}) PASSED! accelerate ratio = {reference_time / op_time}"
-            )
-            print(f"reference(backend=eager): time = {reference_time}")
-            print(f"custom op(backend={ctx.op_instance.backend}, version={ctx.op_instance.version}): time = {op_time}\n")
-        else:
-            op_time = evaluator.run_custom_ops(ctx)
-            print(f"custom op(backend={ctx.op_instance.backend}, version={ctx.op_instance.version}): time = {op_time}\n")
+    raw_results = evaluator.evaluate_ops(
+        evaluator.get_op_ctxs(),
+        evaluator.get_eval_info()
+    )
+    
+    print("\n=== Evaluation Results ===")
+    for formatted_result in ProgressReporter.report(raw_results, total=len(ctxs)):
+        print(formatted_result)
 
 
 if __name__ == "__main__":
