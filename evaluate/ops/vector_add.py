@@ -10,7 +10,7 @@ class VaddOp(Op):
         self.device = device
 
         # Ignore incx and incy
-        self.N = 102400
+        self.N = 102410240
         self.X: torch.Tensor
         self.Y: torch.Tensor
         self.incx = 1
@@ -22,7 +22,12 @@ class VaddOp(Op):
                 "v1": None,
                 "v2": None,
             },
-            "triton": {"v0": None},
+            "triton": {
+                "v0": None
+            },
+            "tilelang": {
+                "v0": None
+            },
         }
 
     def get_func(self, backend, version):
@@ -46,7 +51,7 @@ class VaddOp(Op):
                 from vector_add import vadd_v1
 
                 self._backend_impls[backend][version] = vadd_v1
-                
+
             elif version == "v2":
                 from vector_add import vadd_v2
 
@@ -55,6 +60,12 @@ class VaddOp(Op):
         elif backend == "triton":
             if version == "v0":
                 from backend.triton.ops.vector_add import vadd_v0
+
+                self._backend_impls[backend][version] = vadd_v0
+                
+        elif backend == "tilelang":
+            if version == "v0":
+                from backend.tilelang.ops.vector_add import vadd_v0
 
                 self._backend_impls[backend][version] = vadd_v0
 

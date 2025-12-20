@@ -32,8 +32,9 @@ tolerance = 1e-3
 [ops.vadd]
 impl = [
     { backend = "cuda", versions = ["v0"] },
-    { backend = "triton", versions = ["v0"] }
+    { backend = "triton", versions = ["v0"] },
+    { backend = "tilelang", versions = ["v0"] },
 ]
-num_warmup = 10
+num_warmup = 100
 num_eval = 10
 tolerance = 1e-3
