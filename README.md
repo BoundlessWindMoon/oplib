@@ -9,17 +9,25 @@
 ## backend 
 - [x] torch
 - [x] cuda
-- [ ] triton
+- [x] triton
 - [ ] cutile
 - [ ] tilelang
 
 # Quick start
-install ops
+install requirement
+```python
+# pip
+pip install -r requirement.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+# uv
+uv pip install -r requirement.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 ```
+
+install ops
+```python
 python setup.py install
 ```
 run ops
-```
+```python
 python run.py
 ```
 results:
