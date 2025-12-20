@@ -48,5 +48,5 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m)
 {
     m.def("vadd_v0", &vadd_v0, "Vector Add V0(CUDA)");
     m.def("vadd_v1", &vadd_v1, "Vector Add V1(CUDA)");
-    m.def("vadd_v2", &vadd_v2, "Vector Add V1(CUDA)");
+    m.def("vadd_v2", &vadd_v2, "Vector Add V2(CUDA)");
 }
