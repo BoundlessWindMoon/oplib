@@ -54,4 +54,10 @@ class ProgressReporter:
                 f"Eager: {result['ref_time']:>7.3f}ms | "
                 f"Custom: {result['op_time']:>7.3f}ms"
             )
+        else:
+            color = "\033[32m"
+            return (
+                f"? {backend.ljust(12)} | "
+                f"Custom: {result['op_time']:>7.3f}ms"
+            )
         return f"• {backend.ljust(12)} | Time: {result['op_time']:>7.3f}ms"

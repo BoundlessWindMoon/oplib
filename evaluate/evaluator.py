@@ -137,7 +137,7 @@ class Evaluator:
         # Measure performance
         op_time = measure_time(op.get_result)
 
-        return {op_time / num_eval}
+        return op_time / num_eval
 
     def run_full_evaluation(self, ctx):
         assert torch.cuda.is_available(), "torch.cuda.is_available == False"

@@ -3,7 +3,7 @@ from evaluate.op import Op
 from utils.reporter import ProgressReporter
 import argparse
 
-config_path = "./config/ops.toml"
+config_path = "./config/ops_eager.toml"
 device = "cuda:0"
 
 
